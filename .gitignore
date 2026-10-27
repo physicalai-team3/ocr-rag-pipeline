@@ -13,3 +13,25 @@ models/
 *.db
 *.sqlite
 chroma/
+
+# C runtime outputs and tests
+data/runtime/
+.pytest_cache/
+.test-temp/
+*.sqlite-wal
+*.sqlite-shm
+
+# Preserve legacy private runtime data; only team evaluation fixture is source.
+data/*
+!data/passages.json
+validation/
+.env.*
+!.env.example
+*.mp4
+*.mov
+*.npy
+*.zip
+*.webm
+*.m4v
+*.log
+model-cache/
