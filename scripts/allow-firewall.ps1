@@ -1,4 +1,4 @@
-# 휴대폰에서 PC의 8443 포트로 들어올 수 있게 Windows 방화벽 규칙을 추가합니다.
+﻿# 휴대폰에서 PC의 8443 포트로 들어올 수 있게 Windows 방화벽 규칙을 추가합니다.
 # 관리자 권한 PowerShell에서 실행:  powershell -ExecutionPolicy Bypass -File scripts\allow-firewall.ps1
 param([int]$Port = 8443)
 
