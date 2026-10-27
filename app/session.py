@@ -9,8 +9,10 @@
 
 토큰 규칙
 - QR은 10분 안에 처음 연결해야 함 (스캔 안 된 QR은 만료)
-- 한 세션에는 휴대폰 한 대만. 연결 중에는 같은 토큰으로 두 번째 접속을 거부
-- 연결이 끊긴 뒤 같은 휴대폰이 다시 붙는 것은 SESSION_TTL 동안 허용 (Wi-Fi 끊김 대비)
+- 한 세션에 동시에 연결되는 휴대폰은 한 대. 같은 토큰으로 새 연결이 오면 새 연결이 이기고
+  B(capture.py)가 이전 연결을 close code 4000으로 끊음
+  (Wi-Fi가 잠깐 끊기면 서버가 이전 연결의 끊김을 알아채기 전에 휴대폰이 다시 붙기 때문)
+- 처음 연결한 뒤로는 SESSION_TTL 동안 다시 붙을 수 있음
 """
 from __future__ import annotations
 
@@ -37,7 +39,6 @@ class Session:
     token: str
     created_at: float = field(default_factory=time.time)
     claimed_at: float | None = None
-    in_use: bool = False
     status: str = "waiting"  # waiting | paired | disconnected
 
     @property
@@ -66,21 +67,17 @@ def _check(sid: str, token: str) -> tuple[bool, str]:
         return False, "invalid"
     if time.time() > s.expires_at:
         return False, "expired"
-    if s.in_use:
-        return False, "in_use"
     return True, "ok"
 
 
 def verify(sid: str, token: str) -> bool:
     """B의 /ws/camera가 연결 직후 호출. False면 close code 4401로 끊으세요.
 
-    성공하면 그 세션을 '사용 중'으로 잡아 두므로, 같은 QR로 두 번째 기기가 붙지 못합니다.
-    연결이 끝나면 `session.disconnected` 이벤트(또는 mark_disconnected)로 풀어 주세요.
+    이미 연결된 기기가 있어도 토큰이 맞으면 True입니다. 이전 연결은 호출한 쪽이 끊어 주세요.
     """
     ok, _ = _check(sid, token)
     if ok:
         s = _sessions[sid]
-        s.in_use = True
         if s.claimed_at is None:
             s.claimed_at = time.time()
     return ok
@@ -99,9 +96,9 @@ def _on_event(ev: events.Event) -> None:
     if s is None:
         return
     if ev["type"] == "session.paired":
-        s.in_use, s.status = True, "paired"
+        s.status = "paired"
     elif ev["type"] == "session.disconnected":
-        s.in_use, s.status = False, "disconnected"
+        s.status = "disconnected"
 
 
 events.add_listener(_on_event)
