@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import capture, events, netinfo, rag, session, status
+from . import ocr
 
 STATIC = netinfo.ROOT / "static"
 
@@ -16,7 +17,9 @@ STATIC = netinfo.ROOT / "static"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     events.bind_loop(asyncio.get_running_loop())
+    await ocr.start()
     yield
+    await ocr.stop()
 
 
 app = FastAPI(title="OCR-RAG pipeline", lifespan=lifespan)

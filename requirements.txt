@@ -4,3 +4,13 @@ segno>=1.6
 cryptography>=43
 python-dotenv>=1.0
 httpx>=0.27
+
+# C: actual OCR / embedding / persistent storage
+numpy>=2,<3
+opencv-python-headless>=4.10,<6
+pillow>=11
+rapidocr==3.10.0
+onnxruntime==1.24.4
+sentence-transformers>=5,<7
+torch>=2.2
+filelock>=3

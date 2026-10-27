@@ -1,4 +1,4 @@
-# OCR-RAG 파이프라인
+﻿# OCR-RAG 파이프라인
 
 PC 대시보드의 QR을 휴대폰으로 스캔 → 휴대폰 카메라가 컨베이어 화면을 찍어 서버로 전송 →
 OCR → 임베딩·벡터DB 저장 → 대시보드에 실시간 현황 + RAG 질의응답.
@@ -31,11 +31,12 @@ python scripts/fake_pipeline.py --url "https://192.168.0.12:8443/m?sid=...&t=...
 | --- | --- |
 | A ① QR · ⑤ 현황 | `app/events.py` `app/session.py` `app/status.py` `app/netinfo.py` `static/dashboard.html` `static/css/common.css` `static/js/qr.js` `static/js/status.js` `static/js/mobile-session.js` `scripts/` |
 | B ② 영상 | `app/capture.py` `static/js/camera.js` |
-| C ③ OCR · ④ 저장 | `app/ocr.py` `app/store.py` |
+| C ③ OCR · ④ 저장 | `app/ocr.py` `app/store.py` `app/engine/` `app/remote.py` |
 | D ⑥ RAG | `app/rag.py` `static/js/rag.js` (`#zone-rag` 안만) |
 | 공용 | `app/main.py`(라우터 등록만) `requirements.txt` — 줄 추가만 |
 
-B·C·D 파일은 지금 **합의된 형식만 맞춘 가짜 구현**입니다. 각자 실제 구현으로 교체하세요.
+B의 영상 전송과 D의 RAG는 최신 팀 구현을 유지하고, C의 OCR·임베딩·저장을 실제 모델로 연결했습니다.
+C 설치·품질 검토·실모델 검증은 [C_OCR_EMBEDDING.md](C_OCR_EMBEDDING.md)를 보세요.
 `data/passages.json`은 `ocr-conveyor-test.html`의 카드 100장 원문(정답 데이터)입니다.
 
 ## 약속 (자세한 내용은 합의 문서)
@@ -72,3 +73,12 @@ B·C·D 파일은 지금 **합의된 형식만 맞춘 가짜 구현**입니다. 
 ## Git
 
 `main`에 바로 push하지 않고 `feat/<기능>` 브랜치 → PR. 시작 전과 PR 전에 `git pull --rebase origin main`.
+
+
+## C 통합 검증
+
+최신 팀 main `a21954d` 기준으로 C만 추가했습니다. `tests/test_capture.py`와 D의 기존 질문/응답 테스트를 유지하며, 정답100건을 운영store에 넣던 통합테스트만 격리된검색대역으로 변경했습니다. C의 품질gate는 완화하지 않았습니다. `python -m pytest -q`는 모델 다운로드 없이 계약을 검증하고, 실제모델은 `python scripts/verify_ocr_embedding.py --video sample_input.mp4`로 별도 확인합니다.
+
+섹션 갱신 시각: 2026-10-27 15:34:39 +09:00
+
+파일 갱신 시각: 2026-10-27 15:34:39 +09:00

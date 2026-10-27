@@ -93,19 +93,18 @@ def test_llm_failure_falls_back_to_extractive(client, monkeypatch):
     assert d["mode"] == "extractive" and "46 °C" in d["answer"]
 
 
-def test_through_main_app_with_skeleton_store():
-    """뼈대 main.app + 뼈대(가짜) store 에 정답 카드를 넣고 /api/ask 를 부른다 (C+D 통합 리허설)."""
-    import json
-    from pathlib import Path
-
+def test_through_main_app_without_indexing_reference_corpus(monkeypatch):
+    """The D fixture stays a search double; C quality gates are never bypassed."""
     from app import main, store
-
+    calls=[]
+    def search(question,k):
+        calls.append((question,k))
+        return SEARCH(question,k)
+    monkeypatch.setattr(store,'search',search)
     rag.use_search(None)
-    for d in json.loads((Path(rag.ROOT) / "data" / "passages.json").read_text(encoding="utf-8")):
-        store.upsert(d)
-    with TestClient(main.app) as c:
-        d = c.post("/api/ask", json={"question": "What water temperature kills yeast?"}).json()
-    # 뼈대 store.search 는 단순 부분문자열 매칭이라 순위는 보지 않고, 연결과 형식만 확인한다
-    assert d["sources"] and all({"card_no", "title"} <= set(s) for s in d["sources"])
-    labels = [f"[#{s['card_no']:03d} {s['title']}]" for s in d["sources"]]
-    assert any(d["answer"].endswith(l) for l in labels)
+    with TestClient(main.app) as client:
+        result=ask(client,'What water temperature kills yeast?')
+    assert calls==[('What water temperature kills yeast?',3)]
+    assert '46 °C' in result['answer']
+    assert result['sources'] and all({'card_no','title'} <= set(row) for row in result['sources'])
+    assert store.count()==0
